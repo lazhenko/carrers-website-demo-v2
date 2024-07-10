@@ -1,7 +1,16 @@
+import os
 from flask import Flask, render_template, jsonify, request
+from flask_hcaptcha import hCaptcha
+from mailjet_rest import Client
 from database import load_jobs_from_db, load_job_from_db, add_application_to_db
+from send_email import send_email_to_applicant
+
+HCAPTCHA_ENABLED = True
 
 app = Flask(__name__)
+app.config['HCAPTCHA_SITE_KEY'] = os.environ['SITEKEY']
+app.config['HCAPTCHA_SECRET_KEY'] = os.environ['hCAPTCHA_SECRET']
+hcaptcha = hCaptcha(app)
 
 
 @app.route('/')
@@ -27,20 +36,24 @@ def show_job(id):
 @app.route("/api/job/<id>")
 def show_job_json(id):
   job = load_job_from_db(id)
-  return jsonify(job )
+  return jsonify(job)
+
 
 @app.route("/job/<id>/apply", methods=['post'])
 def apply_to_job(id):
-  data = request.form
-  job = load_job_from_db(id)
+  if hcaptcha.verify():
+    data = request.form
+    job = load_job_from_db(id)
 
-  add_application_to_db(id, data)
-  # store this in the DB
-  # display an acknowledgement 
-  return render_template('application_submitted.html',
-                        application=data,
-                        job=job)
-
+    add_application_to_db(id, data)
+    # store this in the DB
+    # display an acknowledgement
+    send_email_to_applicant(data['email'], job, data['full_name'])
+    return render_template('application_submitted.html',
+                           application=data,
+                           job=job)
+  else:
+    return "Captcha verification failed", 400
 
 
 if __name__ == '__main__':
