@@ -1,7 +1,6 @@
 import os
 from flask import Flask, render_template, jsonify, request
 from flask_hcaptcha import hCaptcha
-from mailjet_rest import Client
 from database import load_jobs_from_db, load_job_from_db, add_application_to_db
 from send_email import send_email_to_applicant
 

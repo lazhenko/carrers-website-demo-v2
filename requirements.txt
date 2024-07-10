@@ -3,3 +3,5 @@ gunicorn
 sqlalchemy
 psycopg2
 werkzeug
+mailjet_rest
+flask_hcaptcha
